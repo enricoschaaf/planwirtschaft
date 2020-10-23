@@ -98,14 +98,31 @@ const GameComponent = ({
   return (
     <div className="grid gap-4">
       <ul>
-        {Object.values(user).map(({ name, set }) => (
-          <li key={name}>
-            {name}
-            {game.get("status") === "game"
-              ? `${userMap.get(name) ? " hat gesetzt." : " muss noch setzen."}`
-              : game.get("status") === "result"
-              ? ` hat ${set} gesetzt.`
-              : " ist dem Spiel beigetreten."}
+        {Object.values(user).map(({ name: userName, set }) => (
+          <li key={userName}>
+            {name === userName
+              ? `${
+                  game.get("status") === "game"
+                    ? `${
+                        userMap.get(userName)
+                          ? " Du hast gesetzt."
+                          : " Du muss noch setzen."
+                      }`
+                    : game.get("status") === "result"
+                    ? ` Du hast ${set} gesetzt.`
+                    : "Du bist dem Spiel beigetreten."
+                }`
+              : `${userName}${
+                  game.get("status") === "game"
+                    ? `${
+                        userMap.get(userName)
+                          ? " hat gesetzt."
+                          : " muss noch setzen."
+                      }`
+                    : game.get("status") === "result"
+                    ? ` hat ${set} gesetzt.`
+                    : " ist dem Spiel beigetreten."
+                }`}
           </li>
         ))}
       </ul>
