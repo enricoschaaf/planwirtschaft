@@ -1,6 +1,8 @@
-import { useMap, useRoom } from "@roomservice/react"
-import { usePresence } from "hooks/usePresence"
-import { SyntheticEvent, useEffect, useState } from "react"
+import { NameForm } from "components/NameForm"
+import { Title } from "components/Title"
+import { useMap, usePresence, useRoom } from "hooks"
+import { useContext, useEffect, useState } from "react"
+import { NameContext } from "utils/NameContext"
 
 export type User = {
   name: string
@@ -12,8 +14,9 @@ export type User = {
 
 export const Game = ({ id }: { id: string }) => {
   const room = useRoom(id)
-  const [game, setGame] = useMap<"game" | "result">(id, "game")
-  const [name, setName] = useState<string | undefined>()
+  const [game, setGame] = useMap<"lobby" | "game" | "result">(id, "game")
+  const [rerender, setRerender] = useState<number | undefined>()
+  const [name] = useContext(NameContext)
   const [user, setUser] = usePresence<{
     name: string
     isAdmin: boolean
@@ -32,75 +35,61 @@ export const Game = ({ id }: { id: string }) => {
         isSet: false,
       })
     }
-  }, [user, game?.set, room?.me])
+  }, [user, game?.set, room?.me, rerender])
 
   useEffect(() => {
-    if (Object.values(user).some(({ isAdmin }) => isAdmin)) return
+    if (Object.values(user).some(({ isAdmin }) => isAdmin) || !room) return
     if (Object.keys(user)[0] === room.me) {
       setUser({ ...user[room.me], isAdmin: true })
     }
   }, [user, room?.me])
 
-  async function onSubmit(e: SyntheticEvent) {
-    e.preventDefault()
-
-    const target = e.target as typeof e.target & {
-      name: { value: string }
-      reset: () => void
-    }
-
-    const name = target.name.value
-
-    setName(name)
-
-    setUser({
-      name,
-      isAdmin: !Object.keys(await room.presence().getAll("user")).length,
-      count: 4,
-      isSet: false,
-    })
-
-    target.reset()
-  }
-
   return (
     <>
-      {!name && room && (
-        <form onSubmit={onSubmit}>
-          <label htmlFor="name" className="sr-only">
-            Namen festlegen
-          </label>
-          <input
-            type="text"
-            name="name"
-            id="name"
-            autoComplete="off"
-            required
-          />
-          <input type="submit" value="Namen festlegen" />
-        </form>
-      )}
-      {user && room && game && name && (
-        <>
-          <ul>
-            {Object.values(user).map(({ name }) => (
-              <li key={name}>{name}</li>
-            ))}
-          </ul>
-          {user[room.me]?.isAdmin &&
-            (!game.get("status") || game.get("status") === "result") && (
-              <button onClick={() => setGame(game.set("status", "game"))}>
-                Spiel starten
-              </button>
-            )}
-          {game.get("status") === "game" && (
-            <div>
-              {[0, 1, 2, 3, 4].map((i) => {
-                return (
+      <Title>Raum</Title>
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 grid place-items-center">
+        {!name && room && <NameForm />}
+        <button
+          onClick={() =>
+            setUser({
+              name,
+              isAdmin: !Object.keys(user).length,
+              count: 4,
+              isSet: false,
+            })
+          }
+        >
+          Beitreten
+        </button>
+        {user && room && game && name && (
+          <>
+            <div className="prose">
+              <h3>Lobby</h3>
+            </div>
+            <ul className="flex gap-2">
+              {Object.values(user).map(({ name }) => (
+                <li key={name}>{name}</li>
+              ))}
+            </ul>
+            {user[room.me]?.isAdmin &&
+              (!game.get("status") || game.get("status") === "result") && (
+                <span className="inline-flex rounded-md shadow-sm">
                   <button
+                    className="inline-flex items-center px-6 py-3 border border-transparent text-base leading-6 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition ease-in-out duration-150"
+                    onClick={() => setGame(game.set("status", "game"))}
+                  >
+                    Spiel starten
+                  </button>
+                </span>
+              )}
+            {game.get("status") === "game" && (
+              <span className="space-x-2">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <button
+                    className="inline-flex items-center px-6 py-3 border border-transparent text-base leading-6 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition ease-in-out duration-150 disabled:opacity-50"
                     key={i}
                     disabled={
-                      user[room.me].count - i < 0 || user[room.me].isSet
+                      user[room.me]?.count - i < 0 || user[room.me]?.isSet
                     }
                     onClick={() => {
                       setUser({
@@ -109,26 +98,27 @@ export const Game = ({ id }: { id: string }) => {
                         isSet: true,
                         set: i,
                       })
+                      setRerender(Math.random())
                     }}
                   >
                     {i}
                   </button>
-                )
-              })}
-            </div>
-          )}
-          {user[room.me] && <p>Kronkorken übrig: {user[room.me].count}</p>}
-          {game.get("status") === "result" && (
-            <ul>
-              {Object.values(user).map(({ name, set }) => (
-                <li key={name}>
-                  {name}: {set ?? 0}
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
-      )}
+                ))}
+              </span>
+            )}
+            {user[room.me] && <p>Kronkorken übrig: {user[room.me].count}</p>}
+            {game.get("status") === "result" && (
+              <ul>
+                {Object.values(user).map(({ name, set }) => (
+                  <li key={name}>
+                    {name}: {set ?? 0}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </div>
     </>
   )
 }

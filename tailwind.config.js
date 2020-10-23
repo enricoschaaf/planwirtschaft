@@ -1,7 +1,11 @@
 module.exports = {
   future: "all",
-  purge: ["./components/**/*.{js,ts,jsx,tsx}", "./pages/**/*.{js,ts,jsx,tsx}"],
+  purge: ["./pages/**/*.{js,ts,jsx,tsx}", "./components/**/*.{js,ts,jsx,tsx}"],
   theme: [],
-  variants: {},
-  plugins: [],
+  variants: {
+    variants: {
+      opacity: ({ after }) => after(["disabled"]),
+    },
+  },
+  plugins: [require("@tailwindcss/ui")],
 }

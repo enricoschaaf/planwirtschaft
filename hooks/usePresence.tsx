@@ -1,6 +1,6 @@
 import { PresenceClient } from "@roomservice/browser"
-import { useRoom } from "@roomservice/react"
 import { useCallback, useEffect, useRef, useState } from "react"
+import { useRoom } from "./useRoom"
 
 export function usePresence<T extends any>(
   roomName: string,

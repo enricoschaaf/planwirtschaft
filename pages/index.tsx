@@ -1,6 +1,7 @@
-import { useRoom } from "@roomservice/react"
+import { IndexComponent } from "components/IndexComponent"
+import { NameForm } from "components/NameForm"
+import { Title } from "components/Title"
 import { nanoid } from "nanoid"
-import Link from "next/link"
 import { useEffect, useState } from "react"
 
 const Index = () => {
@@ -10,19 +11,20 @@ const Index = () => {
     setId(nanoid(5))
   }, [])
 
-  if (id) {
-    return <IndexCompoent id={id} />
-  }
-  return null
+  return (
+    <>
+      <Title />
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 grid gap-4">
+        <div className="prose max-w-none">
+          <h1 className="text-center">Planwirtschaft</h1>
+        </div>
+        <NameForm />
+        <div className="grid place-items-center h-screen">
+          {id && <IndexComponent id={id} />}
+        </div>
+      </div>
+    </>
+  )
 }
 
 export default Index
-
-const IndexCompoent = ({ id }: { id: string }) => {
-  useRoom(id)
-  return (
-    <Link href={`/${id}`}>
-      <a>Spiel erstellen</a>
-    </Link>
-  )
-}
