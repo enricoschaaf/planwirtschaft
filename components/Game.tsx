@@ -69,7 +69,7 @@ const GameComponent = ({
   room
   game
   setGame
-  user
+  user: { [key: string]: User }
   setUser
   userMap: Pick<
     InnerMapClient<boolean>,
@@ -83,10 +83,14 @@ const GameComponent = ({
   ) => any
 }) => {
   useEffect(() => {
-    if (Object.values(userMap.toObject()).every((isSet) => isSet)) {
+    if (
+      Object.entries(userMap.toObject())
+        .filter(([key]) => Object.values(user).find(({ name }) => key === name))
+        .every(([, isSet]) => isSet)
+    ) {
       setGame(game?.set("status", "result"))
     }
-  }, [userMap])
+  }, [user, userMap])
 
   useEffect(() => {
     if (Object.values(user).some(({ isAdmin }) => isAdmin)) return
@@ -128,7 +132,7 @@ const GameComponent = ({
       </ul>
       {game.get("status") === "game" && (
         <span className="space-x-2">
-          {[0, 1, 2, 3, 4].map((i) => (
+          {[...Array(user[room.me].count + 1).keys()].map((i) => (
             <span key={i} className="inline-flex rounded-md shadow-sm">
               <button
                 className="inline-flex items-center px-6 py-3 border border-transparent text-base leading-6 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition ease-in-out duration-150 disabled:opacity-50"
