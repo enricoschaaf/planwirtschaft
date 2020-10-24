@@ -8,16 +8,18 @@ const beamsClient = new PushNotifications({
 
 export default async ({ body }: NextApiRequest, res: NextApiResponse) => {
   try {
-    const { id } = body
+    const { id, name } = body
 
-    if (!id) res.status(400).end()
+    if (!id || !name) res.status(400).end()
 
     await beamsClient.publishToInterests(["planwirtschaft"], {
       web: {
         notification: {
           title: "Planwirtschaft",
-          body: "Neue Runde Planwirtschaft gestartet.",
+          body: `${name} hat eine neue Runde Planwirtschaft gestartet.`,
           deep_link: `https://planwirtschaft.enricoschaaf.com/${id}`,
+          //@ts-expect-error
+          hide_notification_if_site_has_focus: true,
         },
       },
     })
