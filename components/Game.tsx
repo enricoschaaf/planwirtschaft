@@ -2,8 +2,9 @@ import { InnerMapClient } from "@roomservice/browser/dist/MapClient"
 import { Modal } from "components/Modal"
 import { NameForm } from "components/NameForm"
 import { Title } from "components/Title"
+import { m as motion } from "framer-motion"
 import { useMap, usePresence, useRoom } from "hooks"
-import { useContext, useEffect } from "react"
+import { useContext, useEffect, useRef, useState } from "react"
 import { NameContext } from "utils/NameContext"
 
 export type User = {
@@ -82,6 +83,14 @@ const GameComponent = ({
     >,
   ) => any
 }) => {
+  const constraintsRef = useRef()
+  const [bottleCaps, setBottleCaps] = useState([0, 1, 2, 3])
+  const dropRef = useRef<HTMLDivElement>()
+  const bottleCapRef0 = useRef<HTMLSpanElement>()
+  const bottleCapRef1 = useRef<HTMLSpanElement>()
+  const bottleCapRef2 = useRef<HTMLSpanElement>()
+  const bottleCapRef3 = useRef<HTMLSpanElement>()
+
   useEffect(() => {
     if (
       Object.entries(userMap.toObject())
@@ -130,29 +139,92 @@ const GameComponent = ({
           </li>
         ))}
       </ul>
-      {game.get("status") === "game" && (
-        <span className="space-x-2">
-          {[...Array(user[room.me].count + 1).keys()].map((i) => (
-            <span key={i} className="inline-flex rounded-md shadow-sm">
-              <button
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base leading-6 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition ease-in-out duration-150 disabled:opacity-50"
-                disabled={user[room.me].count - i < 0 || userMap[room.me]}
-                onClick={() => {
+      <div ref={constraintsRef}>
+        <div
+          ref={dropRef}
+          className="rounded-3xl border-indigo-600 border-2 w-full pb-full"
+        />
+        {user[room.me].count > 0 && (
+          <span className="space-x-2">
+            {bottleCaps.map((bottleCaps) => (
+              <motion.img
+                data-id={bottleCaps}
+                key={bottleCaps}
+                src="/kronkorken.png"
+                alt="Kronkorken"
+                ref={eval(`bottleCapRef${bottleCaps}`)}
+                className="inline w-20 h-20"
+                dragConstraints={constraintsRef}
+                dragMomentum={false}
+                drag
+              />
+            ))}
+          </span>
+        )}
+      </div>
+      <p>Du hast noch {user[room.me].count} Kronkorken übrig.</p>
+      {game.get("status") && (
+        <div>
+          <span className="inline-flex rounded-md shadow-sm">
+            <button
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base leading-6 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-500 focus:outline-none focus:border-indigo-700 focus:shadow-outline-indigo active:bg-indigo-700 transition ease-in-out duration-150"
+              onClick={() => {
+                if (!userMap.get(name)) {
+                  const {
+                    top: dropTop,
+                    right: dropRight,
+                    bottom: dropBottom,
+                    left: dropLeft,
+                  } = dropRef.current.getBoundingClientRect()
+                  let set = 0
+
+                  const bottleCaps = [
+                    bottleCapRef0.current,
+                    bottleCapRef1.current,
+                    bottleCapRef2.current,
+                    bottleCapRef3.current,
+                  ]
+
+                  bottleCaps
+                    .filter((bottleCap) => bottleCap)
+                    .forEach((bottleCap) => {
+                      const {
+                        top: bottleCapTop,
+                        right: bottleCapRight,
+                        bottom: bottleCapBottom,
+                        left: bottleCapLeft,
+                      } = bottleCap.getBoundingClientRect()
+
+                      if (
+                        bottleCapTop > dropTop &&
+                        bottleCapBottom < dropBottom &&
+                        bottleCapLeft > dropLeft &&
+                        bottleCapRight < dropRight
+                      ) {
+                        set++
+                        setBottleCaps((previousState) =>
+                          previousState.filter(
+                            (currentBottleCap) =>
+                              currentBottleCap !==
+                              parseInt(bottleCap.dataset.id),
+                          ),
+                        )
+                      }
+                    })
                   setUser({
                     ...user[room.me],
-                    count: user[room.me].count - i,
-                    set: i,
+                    count: user[room.me].count - set,
+                    set,
                   })
                   setUserMap(userMap.set(name, true))
-                }}
-              >
-                {i}
-              </button>
-            </span>
-          ))}
-        </span>
+                }
+              }}
+            >
+              Bereit
+            </button>
+          </span>
+        </div>
       )}
-      <p>Du hast noch {user[room.me].count} Kronkorken übrig.</p>
       {user[room.me].isAdmin &&
         (!game.get("status") || game.get("status") === "result") && (
           <div>
@@ -166,7 +238,9 @@ const GameComponent = ({
                   )
                 }}
               >
-                Spiel starten
+                {game.get("status") === "result"
+                  ? "Nächste Runde"
+                  : "Spiel starten"}
               </button>
             </span>
           </div>
